@@ -10,12 +10,21 @@ coverage/
 build/
 dist/
 
-# Environment variables
+# Local Database
+*.db
+*.db-journal
+
+# Environment
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Build
+dist/
+build/
+bin/
 
 # Debug logs
 npm-debug.log*
@@ -72,3 +81,22 @@ out/
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# Local Database
+edge-backend/*.db
+edge-backend/*.db-journal
+
+# Build and IDE
+dist/
+build/
+.vscode/
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sub-project artifacts
+genkit/dist/
+genkit/uploads/
+genkit/node_modules/

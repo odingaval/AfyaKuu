@@ -42,6 +42,7 @@ func main() {
 	// Virtual Training Agent Endpoints
 	api.Post("/train/start", handleStartTraining)
 	api.Post("/train/chat", handleTrainChat)
+	api.Post("/train/evaluate", handleEvaluateTraining)
 
 	// Graceful Shutdown
 	go func() {

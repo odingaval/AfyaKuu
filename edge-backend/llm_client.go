@@ -40,9 +40,12 @@ func CallLocalGemma(prompt string) (string, error) {
 
 	resp, err := http.Post(OllamaEndpoint, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
-		// FALLBACK: If Ollama is offline or model is pulling, return a mock response for UI testing
+		// FALLBACK: Detect if the prompt is for a diagnosis or a chat
 		log.Printf("Ollama unavailable, returning mock response: %v", err)
-		return `{"finding": "Malaria (Mock)", "confidence": 85, "groundedAdvice": "The symptoms of fever and chills match rural protocols for Uncomplicated Malaria. Note: This is an offline-mock response.", "recommendations": ["Perform RDT", "Start Artemether-Lumefantrine if positive", "Monitor for 24h"], "severity": "medium", "followUpRequired": true, "processingTime": 1.2, "disclaimer": "Diagnostic support ONLY. Confirm with clinical exam."}`, nil
+		if strings.Contains(prompt, "JSON") {
+			return `{"finding": "Malaria (Mock)", "confidence": 85, "groundedAdvice": "Ollama is offline. This is a mock response.", "recommendations": ["Ensure Ollama is running"], "severity": "medium", "followUpRequired": true}`, nil
+		}
+		return "Jambo nurse. (Ollama is currently offline, this is a mock response). I am feeling a bit better now.", nil
 	}
 	defer resp.Body.Close()
 

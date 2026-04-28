@@ -13,6 +13,31 @@ type DiagnoseRequest struct {
 	ImageBase64 string `json:"imageBase64"`
 }
 
+type TrainingCase struct {
+	ID           string   `json:"id"`
+	Title        string   `json:"title"`
+	Description  string   `json:"description"`
+	SystemPrompt string   `json:"systemPrompt"`
+	Protocols    []string `json:"protocols"`
+}
+
+var TrainingCases = map[string]TrainingCase{
+	"malaria_01": {
+		ID:    "malaria_01",
+		Title: "Fever in Taita Taveta",
+		Description: "A 28-year-old farmer presenting with severe fatigue and intermittent high fever.",
+		SystemPrompt: "You are a 28-year-old farmer named Juma. You feel very sick with chills and a 'fire' in your head (fever). You are worried about your maize crop. Speak simply and stay in character. Never mention JSON or diagnostics.",
+		Protocols: []string{"Malaria Protocol 2024", "Febrile Illness Triage"},
+	},
+	"pneumonia_child": {
+		ID:    "pneumonia_child",
+		Title: "Pediatric Respiratory Distress",
+		Description: "A mother brings her 3-year-old child who has a persistent cough and 'fast breathing'.",
+		SystemPrompt: "You are Mama Otieno. Your small son is very ill. He is breathing very fast like he is running. You are very scared and keep asking the nurse if he will be okay. Stay in character.",
+		Protocols: []string{"IMCI Pneumonia Guidelines", "Pediatric Triage"},
+	},
+}
+
 func handleDiagnose(c *fiber.Ctx) error {
 	var req DiagnoseRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -82,35 +107,88 @@ func handleStartTraining(c *fiber.Ctx) error {
 }
 
 func handleTrainChat(c *fiber.Ctx) error {
-	var req TrainChatRequest
+	var req struct {
+		Message string `json:"message"`
+		CaseID  string `json:"caseId"`
+	}
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "invalid format"})
 	}
 
-	// Dynamic persona injected as a hidden patient template
-	// Normally fetched from SQLite `training_cases` table
-	systemPrompt := `
-<system>
-You are playing the role of an interactive simulated patient from rural Kenya.
-Your hidden profile: A 28-year-old farmer presenting with severe fatigue, intermittent high fever, and chills for the past 4 days.
-You DO NOT know medical terminology.
-If the doctor (user) asks to run an RDT for Malaria, ONLY output: <call_lab>{"test_name": "rdt_malaria"}</call_lab>
-</system>`
+	tCase, ok := TrainingCases[req.CaseID]
+	if !ok {
+		tCase = TrainingCases["malaria_01"] // Default
+	}
 
-	prompt := fmt.Sprintf("%s\n<user>%s</user>", systemPrompt, req.Message)
+	prompt := fmt.Sprintf(`
+<system>
+%s
+ACTUAL PATIENT INSTRUCTIONS:
+- Speak as a person, not an AI.
+- Use simple language.
+- DO NOT use JSON, tags, or structured data.
+- Response should be 1-3 sentences maximum.
+</system>
+<user>%s</user>`, tCase.SystemPrompt, req.Message)
 
 	response, err := CallLocalGemma(prompt)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Trainer Offline."})
 	}
 
-	// 1. Evaluate function/tool calls locally
-	if strings.Contains(response, "<call_lab>") {
-		// Mock local tool resolution without internet
-		// e.g. "We parsed <call_lab> and queried SQLite for lab result for this patient case."
-		response = "[SYSTEM NOTIFICATION: Lab Result Returned - RDT Malaria: POSITIVE_PF]\nPatient: I just got my results back doctor, what does it say?"
+	return c.JSON(fiber.Map{"reply": strings.TrimSpace(response)})
+}
+
+func handleEvaluateTraining(c *fiber.Ctx) error {
+	var req struct {
+		History []Message `json:"history"`
+		Notes   string    `json:"notes"`
+		CaseID  string    `json:"caseId"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "invalid format"})
 	}
 
-	return c.JSON(fiber.Map{"reply": strings.TrimSpace(response)})
+	tCase := TrainingCases[req.CaseID]
+	
+	// Construct evaluation prompt
+	prompt := fmt.Sprintf(`
+<system>
+You are a Senior Medical Supervisor. Evaluate the nurse's performance in the following simulation.
+Case: %s
+Protocols to check: %v
+Nurse's Notes: %s
+</system>
+<user>
+Conversation History:
+%v
+
+Provide a JSON evaluation:
+{
+  "score": (0-100),
+  "feedback": (string),
+  "missedSteps": (array of strings),
+  "strengths": (array of strings)
+}
+</user>`, tCase.Title, tCase.Protocols, req.Notes, req.History)
+
+	evaluation, err := CallLocalGemma(prompt)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Evaluation engine failed."})
+	}
+
+	// Extract JSON
+	start := strings.Index(evaluation, "{")
+	end := strings.LastIndex(evaluation, "}")
+	if start != -1 && end != -1 {
+		evaluation = evaluation[start : end+1]
+	}
+
+	return c.SendString(evaluation)
+}
+
+type Message struct {
+	Text   string `json:"text"`
+	Sender string `json:"sender"`
 }
 

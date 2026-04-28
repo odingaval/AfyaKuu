@@ -1,0 +1,23 @@
+{
+  "name": "afyalens",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "type": "module",
+  "scripts": {
+    "test:db": "NODE_OPTIONS=--loader ts-node/esm node --loader ts-node/esm test-mongodb.ts"
+  },
+  "dependencies": {
+    "mongoose": "^8.0.0",
+    "dotenv": "^16.0.0",
+    "weaviate-ts-client": "^2.0.0",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  }
+}

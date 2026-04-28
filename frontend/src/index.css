@@ -47,3 +47,32 @@ a {
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+
+/* Premium UI Utilities */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@keyframes pulse-subtle {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(0.98); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.animate-pulse-slow {
+  animation: pulse-subtle 3s infinite ease-in-out;
+}
+
+.drop-zone-active {
+  border-color: #2563eb !important;
+  background-color: rgba(37, 99, 235, 0.05) !important;
+}

@@ -2,7 +2,7 @@
 
 **AfyaKuu** is an offline-first, Privacy-Preserving AI Diagnostic & Training platform designed for healthcare workers in low-resource, disconnected environments. 
 
-Powered by **Google Gemma 2**, AfyaLens provides real-time clinical support and interactive nurse education without requiring a single byte of internet connectivity.
+Powered by **Google Gemma 2**, AfyaKuu provides real-time clinical support and interactive nurse education without requiring a single byte of internet connectivity.
 
 ---
 
